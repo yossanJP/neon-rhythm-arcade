@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Rhythm Arcade</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas" width="1280" height="720"></canvas>
+        <div id="ui-layer">
+            <div id="screen-title" class="screen">
+                <h1 class="glitch-text">NEON RHYTHM</h1>
+                <p class="subtitle">ARCADE EDITION</p>
+                <button id="btn-start" class="btn">CLICK TO START</button>
+            </div>
+
+            <div id="screen-song-select" class="screen hidden">
+                <h2>SELECT SONG</h2>
+                <div id="song-list" class="list-container"></div>
+                <div id="difficulty-select" class="hidden">
+                    <h3>DIFFICULTY</h3>
+                    <div class="diff-buttons">
+                        <button class="btn btn-diff" data-diff="easy">EASY</button>
+                        <button class="btn btn-diff" data-diff="normal">NORMAL</button>
+                        <button class="btn btn-diff" data-diff="hard">HARD</button>
+                    </div>
+                    <p class="diff-note">SCORE MULTIPLIER: EASY ×1.00 / NORMAL ×1.25 / HARD ×1.55</p>
+                </div>
+            </div>
+
+            <div id="screen-hud" class="screen hidden">
+                <div class="hud-top">
+                    <div class="score-box">SCORE: <span id="hud-score">0</span></div>
+                    <div class="overdrive-box">
+                        OVERDRIVE
+                        <div class="gauge-bg"><div id="hud-od-gauge" class="gauge-fill"></div></div>
+                    </div>
+                </div>
+                <div class="combo-box" id="hud-combo-box">
+                    <div id="hud-combo">0</div>
+                    <div class="combo-label">COMBO</div>
+                </div>
+                <div class="judgment-box" id="hud-judgment"></div>
+                <div id="od-popup" class="od-popup hidden">
+                    <img src="assets/ui/overdrive_banner.png" alt="OVERDRIVE">
+                </div>
+            </div>
+
+            <div id="screen-result" class="screen hidden">
+                <h2>RESULT</h2>
+                <div class="result-rank" id="res-rank"></div>
+                <div class="result-stats">
+                    <p>SCORE: <span id="res-score">0</span></p>
+                    <p>ACCURACY: <span id="res-acc">0</span>%</p>
+                    <p>MAX COMBO: <span id="res-combo">0</span></p>
+                    <p class="stat-perfect">PERFECT: <span id="res-perfect">0</span></p>
+                    <p class="stat-good">GOOD: <span id="res-good">0</span></p>
+                    <p class="stat-miss">MISS: <span id="res-miss">0</span></p>
+                </div>
+                <div class="result-buttons">
+                    <button id="btn-retry" class="btn btn-image">RETRY</button>
+                    <button id="btn-back" class="btn btn-image">SONG SELECT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

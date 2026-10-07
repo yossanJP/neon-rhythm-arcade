@@ -1,0 +1,67 @@
+[
+  {
+    "id": "street-life",
+    "title": "Street Life",
+    "artist": "saraahh",
+    "audio": "music/street-life.mp3",
+    "bpm": 144,
+    "offset": 0,
+    "difficulties": {
+      "easy": "charts/street-life-easy.json",
+      "normal": "charts/street-life-normal.json",
+      "hard": "charts/street-life-hard.json"
+    }
+  },
+  {
+    "id": "short-17",
+    "title": "Short 17 (Speed + Reverb)",
+    "artist": "juniorsoundays",
+    "audio": "music/short-17-speed-reverb.mp3",
+    "bpm": 152,
+    "offset": 0,
+    "difficulties": {
+      "easy": "charts/short-17-easy.json",
+      "normal": "charts/short-17-normal.json",
+      "hard": "charts/short-17-hard.json"
+    }
+  },
+  {
+    "id": "binary-battle",
+    "title": "Binary Battle",
+    "artist": "psychronic",
+    "audio": "music/binary-battle.mp3",
+    "bpm": 152,
+    "offset": 0,
+    "difficulties": {
+      "easy": "charts/binary-battle-easy.json",
+      "normal": "charts/binary-battle-normal.json",
+      "hard": "charts/binary-battle-hard.json"
+    }
+  },
+  {
+    "id": "its-a-rush",
+    "title": "BEAT - Its a Rush",
+    "artist": "fronbondi_skegs",
+    "audio": "music/beat-its-a-rush.mp3",
+    "bpm": 167,
+    "offset": 0,
+    "difficulties": {
+      "easy": "charts/its-a-rush-easy.json",
+      "normal": "charts/its-a-rush-normal.json",
+      "hard": "charts/its-a-rush-hard.json"
+    }
+  },
+  {
+    "id": "hyperpop-anime",
+    "title": "HyperPOP Anime style music - no copyright",
+    "artist": "poorartistt",
+    "audio": "music/hyperpop-anime.mp3",
+    "bpm": 117,
+    "offset": 0,
+    "difficulties": {
+      "easy": "charts/hyperpop-anime-easy.json",
+      "normal": "charts/hyperpop-anime-normal.json",
+      "hard": "charts/hyperpop-anime-hard.json"
+    }
+  }
+]
