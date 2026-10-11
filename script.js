@@ -1,6 +1,6 @@
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
-const cw = canvas.width, ch = canvas.height;
+let cw = canvas.width, ch = canvas.height;
 
 const screens = {
     title: document.getElementById('screen-title'),
@@ -15,14 +15,47 @@ let dummyStartTime = 0, useDummyAudio = false;
 let animationId;
 let currentDifficulty = 'easy';
 
-const metrics = { score: 0, combo: 0, maxCombo: 0, perfect: 0, good: 0, miss: 0, overdrive: 0, isOverdrive: false };
+const metrics = { score: 0, combo: 0, maxCombo: 0, perfect: 0, good: 0, miss: 0, extraMiss: 0, overdrive: 0, isOverdrive: false };
 const config = {
     keys: ['d', 'f', 'j', 'k'], laneCount: 4, scrollSpeed: 1000, hitY: ch * 0.82,
-    judgePerfect: 0.05, judgeGood: 0.12, odMax: 100, odDrainRate: 10,
+    judgePerfect: 0.04, judgeGood: 0.09, odMax: 100, odDrainRate: 10,
     difficultyMultiplier: { easy: 1.0, normal: 1.25, hard: 1.55 }
 };
 const keyState = { 0: false, 1: false, 2: false, 3: false };
-const laneX = [cw * 0.5 - 200, cw * 0.5 - 100, cw * 0.5 + 0, cw * 0.5 + 100], laneW = 100;
+let laneW = 100;
+let laneX = [cw * 0.5 - 200, cw * 0.5 - 100, cw * 0.5, cw * 0.5 + 100];
+const keyboardHeld = [false, false, false, false];
+const activePointers = new Map();
+const queuedInputs = new Map();
+let inputTimer = null;
+const CHORD_WINDOW_MS = 28; // Give multi-touch and keyboard chords one short grouping window.
+
+function resizeStage() {
+    const portrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)').matches;
+    const targetW = portrait ? 720 : 1280;
+    const ratio = portrait ? (canvas.clientHeight / canvas.clientWidth || window.innerHeight / window.innerWidth) : 9 / 16;
+    const targetH = portrait ? Math.max(1100, Math.round(targetW * ratio)) : 720;
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+    }
+    cw = canvas.width;
+    ch = canvas.height;
+    laneW = portrait ? 150 : 100;
+    config.hitY = ch * 0.82;
+    const left = (cw - config.laneCount * laneW) / 2;
+    laneX = Array.from({ length: config.laneCount }, (_, i) => left + i * laneW);
+    if (gameState === 'play') render(getAudioTime());
+}
+
+function clearInputs() {
+    if (inputTimer !== null) clearTimeout(inputTimer);
+    inputTimer = null;
+    queuedInputs.clear();
+    activePointers.clear();
+    keyboardHeld.fill(false);
+    for (let i = 0; i < config.laneCount; i++) keyState[i] = false;
+}
 const laneColors = ['#ff4ae3', '#49d5ff', '#c36bff', '#ff4a8d'];
 
 function makeImage(src) { const img = new Image(); img.src = src; return img; }
@@ -65,6 +98,13 @@ async function init() {
         }];
     }
     renderSongList();
+    resizeStage();
+    window.addEventListener('resize', resizeStage);
+    window.addEventListener('blur', clearInputs);
+    canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
+    canvas.addEventListener('pointerup', handlePointerEnd, { passive: false });
+    canvas.addEventListener('pointercancel', handlePointerEnd, { passive: false });
+    canvas.addEventListener('lostpointercapture', handlePointerEnd);
     document.getElementById('btn-start').addEventListener('click', () => switchScreen('select'));
     document.getElementById('btn-retry').addEventListener('click', () => startGame(currentSong, currentDifficulty));
     document.getElementById('btn-back').addEventListener('click', () => switchScreen('select'));
@@ -76,6 +116,7 @@ function switchScreen(state) {
     Object.values(screens).forEach(s => s.classList.add('hidden'));
     if (screens[state]) screens[state].classList.remove('hidden');
     gameState = state;
+    if (state !== 'hud') clearInputs();
     if (state === 'select') audioObj.pause();
 }
 
@@ -110,7 +151,8 @@ async function startGame(song, diff) {
         currentDifficulty = diff;
         const res = await fetch(song.difficulties[diff]);
         const chartData = await res.json();
-        Object.assign(metrics, { score: 0, combo: 0, maxCombo: 0, perfect: 0, good: 0, miss: 0, overdrive: 0, isOverdrive: false });
+        clearInputs();
+        Object.assign(metrics, { score: 0, combo: 0, maxCombo: 0, perfect: 0, good: 0, miss: 0, extraMiss: 0, overdrive: 0, isOverdrive: false });
         updateHUD();
         currentChart = chartData.map(n => ({ ...n, hit: false, missed: false })).sort((a, b) => a.time - b.time);
         document.getElementById('hud-judgment').innerHTML = '';
@@ -142,24 +184,88 @@ function getAudioTime() {
 function handleKey(e, isDown) {
     if (gameState !== 'play') return;
     const idx = config.keys.indexOf(e.key.toLowerCase());
-    if (idx !== -1) {
-        if (isDown && !keyState[idx]) checkHit(idx);
-        keyState[idx] = isDown;
+    if (idx === -1) return;
+    e.preventDefault();
+    if (isDown) {
+        if (e.repeat || keyboardHeld[idx]) return;
+        const alreadyHeld = keyState[idx];
+        keyboardHeld[idx] = true;
+        keyState[idx] = true;
+        if (!alreadyHeld) queueHit(idx);
+    } else {
+        keyboardHeld[idx] = false;
+        keyState[idx] = [...activePointers.values()].includes(idx);
     }
 }
 
-function checkHit(lane) {
-    const time = getAudioTime();
-    let target = null, minDiff = 999;
-    for (let n of currentChart) {
-        if (n.lane === lane && !n.hit && !n.missed) {
-            const diff = Math.abs(n.time - time);
-            if (diff < minDiff) { minDiff = diff; target = n; }
-        }
+function handlePointerDown(e) {
+    if (gameState !== 'play' || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * cw / rect.width;
+    const y = (e.clientY - rect.top) * ch / rect.height;
+    if (x < laneX[0] || x >= laneX[0] + config.laneCount * laneW || y < 30 || y > ch) return;
+    e.preventDefault();
+    if (activePointers.has(e.pointerId)) return;
+    const lane = Math.floor((x - laneX[0]) / laneW);
+    const alreadyHeld = keyState[lane];
+    activePointers.set(e.pointerId, lane);
+    keyState[lane] = true;
+    if (!alreadyHeld) queueHit(lane);
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* Not supported on some browsers. */ }
+}
+
+function handlePointerEnd(e) {
+    if (!activePointers.has(e.pointerId)) return;
+    e.preventDefault();
+    const lane = activePointers.get(e.pointerId);
+    activePointers.delete(e.pointerId);
+    keyState[lane] = keyboardHeld[lane] || [...activePointers.values()].includes(lane);
+}
+
+function queueHit(lane) {
+    if (gameState !== 'play') return;
+    if (!queuedInputs.has(lane)) queuedInputs.set(lane, getAudioTime());
+    if (inputTimer === null) inputTimer = setTimeout(resolveHits, CHORD_WINDOW_MS);
+}
+
+function resolveHits() {
+    inputTimer = null;
+    if (gameState !== 'play') { queuedInputs.clear(); return; }
+    const presses = new Map(queuedInputs);
+    queuedInputs.clear();
+    if (!presses.size) return;
+
+    // Use the actual first input timestamp so grouping does not widen the judgment window.
+    const hitTime = Math.min(...presses.values());
+    let anchor = null;
+    let minDiff = Infinity;
+    for (const n of currentChart) {
+        if (n.hit || n.missed) continue;
+        const diff = Math.abs(n.time - hitTime);
+        if (diff < minDiff) { minDiff = diff; anchor = n; }
     }
-    if (target && minDiff <= config.judgeGood) {
-        target.hit = true;
-        judgeRecord(minDiff <= config.judgePerfect ? 'PERFECT' : 'GOOD');
+    if (!anchor || minDiff > config.judgeGood) {
+        judgeMiss(true); // Empty-lane spam now counts against accuracy.
+        return;
+    }
+
+    // Notes sharing a timestamp are a legitimate chord, including HARD two-key notes.
+    const chord = currentChart.filter(n => !n.hit && !n.missed && Math.abs(n.time - anchor.time) <= 0.012);
+    const validLanes = new Set(chord.map(n => n.lane));
+    if ([...presses.keys()].some(lane => !validLanes.has(lane))) {
+        // Reject the whole chord: pressing every lane must never score as a valid hit.
+        for (const n of chord) { n.missed = true; judgeMiss(); }
+        judgeMiss(true); // Separate penalty for unnecessary presses.
+        return;
+    }
+
+    // A partial chord can be finished by another tap before its MISS deadline.
+    for (const n of chord) {
+        if (!presses.has(n.lane)) continue;
+        const diff = Math.abs(n.time - presses.get(n.lane));
+        if (diff > config.judgeGood) continue;
+        n.hit = true;
+        judgeRecord(diff <= config.judgePerfect ? 'PERFECT' : 'GOOD');
     }
 }
 
@@ -182,10 +288,11 @@ function judgeRecord(type) {
     updateHUD();
 }
 
-function judgeMiss() {
+function judgeMiss(extraInput = false) {
     showJudge('MISS');
     metrics.combo = 0;
     metrics.miss++;
+    if (extraInput) metrics.extraMiss++;
     if (!metrics.isOverdrive) metrics.overdrive = Math.max(0, metrics.overdrive - 10);
     updateHUD();
 }
@@ -240,7 +347,8 @@ function gameLoop(now) {
         updateHUD();
     }
 
-    currentChart.forEach(n => {
+    // Let already-pressed inputs resolve before their notes can expire.
+    if (!queuedInputs.size) currentChart.forEach(n => {
         if (!n.hit && !n.missed && time - n.time > config.judgeGood) { n.missed = true; judgeMiss(); }
     });
 
@@ -358,7 +466,9 @@ function showResult() {
     switchScreen('result');
     audioObj.pause();
     const total = currentChart.length;
-    const acc = total === 0 ? 0 : (((metrics.perfect * 100 + metrics.good * 50) / (total * 100)) * 100).toFixed(2);
+    // Extra/wrong presses must affect results too, not only the on-screen MISS counter.
+    const attempts = total + metrics.extraMiss;
+    const acc = attempts === 0 ? 0 : (((metrics.perfect * 100 + metrics.good * 50) / (attempts * 100)) * 100).toFixed(2);
     document.getElementById('res-score').textContent = metrics.score;
     document.getElementById('res-acc').textContent = acc;
     document.getElementById('res-combo').textContent = metrics.maxCombo;
