@@ -18,7 +18,7 @@ let currentDifficulty = 'easy';
 const metrics = { score: 0, combo: 0, maxCombo: 0, perfect: 0, good: 0, miss: 0, extraMiss: 0, overdrive: 0, isOverdrive: false };
 const config = {
     keys: ['d', 'f', 'j', 'k'], laneCount: 4, scrollSpeed: 1000, hitY: ch * 0.82,
-    judgePerfect: 0.04, judgeGood: 0.09, odMax: 100, odDrainRate: 10,
+    judgePerfect: 0.045, judgeGood: 0.105, odMax: 100, odDrainRate: 10,
     difficultyMultiplier: { easy: 1.0, normal: 1.25, hard: 1.55 }
 };
 const keyState = { 0: false, 1: false, 2: false, 3: false };
