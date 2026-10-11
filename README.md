@@ -13,7 +13,7 @@
 
 ## 判定システムとOVERDRIVE
 - 判定ラインに重なった瞬間に対応するキーを押してください。
-- 判定は PERFECT / GOOD / MISS の3段階です。（PERFECT: ±40ms、GOOD: ±90ms）
+- 判定は PERFECT / GOOD / MISS の3段階です。（PERFECT: ±45ms、GOOD: ±105ms）
 - 空打ち・不要なキーの追加押しは MISS となり、ACCURACY も下がります。
 - HARD譜面の正しい2キー同時押しは有効ですが、全キー押しなど余分なキーが混ざるとその判定は MISS になります。
 - 連続して成功するとOVERDRIVEゲージが溜まり、最大になると自動発動します。
