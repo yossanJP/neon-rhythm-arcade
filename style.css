@@ -20,7 +20,7 @@ body {
     box-shadow: 0 0 30px rgba(217, 0, 255, 0.18), inset 0 0 20px rgba(0, 240, 255, 0.05);
     border: 1px solid rgba(217, 0, 255, 0.18);
 }
-canvas { display: block; width: 100%; height: 100%; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .screen {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -131,4 +131,42 @@ h3 { letter-spacing: 2px; }
     .hud-top { font-size: 1.1rem; }
     .overdrive-box { width: 220px; }
     .btn-image { width: 240px; height: 56px; }
+}
+
+/* Portrait touch layout: full-height stage and four thumb-sized lanes. */
+@media (max-width: 700px) and (orientation: portrait) {
+    body { height: 100dvh; }
+    #game-container { width: 100vw; height: 100dvh; max-width: none; aspect-ratio: auto; border: 0; }
+    .screen:not(#screen-hud) {
+        overflow-y: auto;
+        padding: calc(14px + env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
+    }
+    h1.glitch-text { font-size: clamp(2rem, 10vw, 3.4rem); text-align: center; }
+    .subtitle { font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 24px; }
+    h2 { font-size: clamp(1.5rem, 7vw, 2.2rem); text-align: center; }
+    h3 { margin: 8px 0; }
+    .btn { font-size: 1rem; padding: 12px 24px; margin: 5px; }
+    .list-container { width: 100%; max-height: 48dvh; }
+    .song-item { font-size: 1rem; padding: 12px 10px; gap: 10px; }
+    .diff-buttons { gap: 4px; }
+    .diff-note { text-align: center; font-size: 0.85rem; }
+    .hud-top {
+        top: calc(env(safe-area-inset-top) + 10px);
+        left: 8px; right: 8px; gap: 8px;
+        font-size: clamp(0.65rem, 2.5vw, 0.9rem);
+    }
+    .score-box, .overdrive-box { padding: 8px; }
+    .score-box { min-width: 0; overflow-wrap: anywhere; }
+    .overdrive-box { width: 45%; flex-shrink: 0; }
+    .gauge-bg { height: 9px; }
+    .combo-box { min-width: 0; padding: 8px 16px; top: 36%; }
+    #hud-combo { font-size: 3rem; }
+    .combo-label { font-size: 0.8rem; }
+    .judgment-box img { max-width: 58vw; }
+    .od-popup img { max-width: 70vw; }
+    .result-rank { min-height: 90px; margin-bottom: 5px; }
+    .result-rank img { max-height: 95px; max-width: 120px; }
+    .result-stats p { font-size: 1.15rem; margin: 2px 0; }
+    .result-buttons { margin-top: 12px; gap: 4px; }
+    .btn-image { width: 44vw; height: 55px; }
 }
